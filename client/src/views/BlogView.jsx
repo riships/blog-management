@@ -29,7 +29,6 @@ function BlogView() {
                 alert(data.message);
                 return;
             }
-            // console.log(data.data);
             
             setBlog(data.data);
         } catch (error) {

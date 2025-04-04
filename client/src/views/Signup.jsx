@@ -6,6 +6,7 @@ function Signup() {
     const navigate = useNavigate();
     // State to store form values
     const [formData, setFormData] = useState({
+        userProfile: '',
         firstName: '',
         lastName: '',
         email: '',
@@ -14,19 +15,37 @@ function Signup() {
     });
     // State to store loading status
     const [loading, setLoading] = useState(false);
+    const [imgPreview, setImgPreview] = useState(null);
 
     // Handle change for input fields
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({
-            ...formData,
-            [name]: value
-        });
-    }
+        const { name, value, type, files } = e.target;
+
+        if (type === 'file') {
+            const imgFile = files[0];
+
+            if (!['image/png', 'image/jpg', 'image/jpeg'].includes(imgFile.type)) {
+                alert("Please choose a supported file type (PNG, JPG, JPEG)");
+                return;
+            }
+
+            const blogUrl = URL.createObjectURL(imgFile);
+            setImgPreview(blogUrl);
+
+            setFormData(prevState => ({
+                ...prevState,
+                [name]: imgFile
+            }));
+        } else {
+            setFormData(prevState => ({
+                ...prevState,
+                [name]: value
+            }));
+        }
+    };
 
     useEffect(() => {
         const token = sessionStorage.getItem('authToken');
-        console.log(token);
 
         if (token) {
             navigate('/blogs');
@@ -41,19 +60,23 @@ function Signup() {
             return alert('Please fill all the fields');
         }
         setLoading(true);
+        const userData = new FormData();
+        userData.append('userProfile', formData.userProfile);
+        userData.append('firstName', formData.firstName);
+        userData.append('lastName', formData.lastName);
+        userData.append('email', formData.email);
+        userData.append('phone_number', formData.phone_number);
+        userData.append('password', formData.password);
         try {
             const response = await fetch(import.meta.env.VITE_API_URL + '/user/signup', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData),
-                credentials: 'include'
+                body: userData,
             });
             const data = await response.json();
             if (data.success) {
                 // clear the data of form
                 setFormData({
+                    userProfile: '',
                     firstName: '',
                     lastName: '',
                     email: '',
@@ -74,6 +97,13 @@ function Signup() {
         }
 
     }
+    const removeFile = () => {
+        setImgPreview(null);
+        setFormData(prevState => ({
+            ...prevState,
+            userProfile: ''
+        }));
+    };
 
     return (
         <div className="py-5 container">
@@ -87,6 +117,48 @@ function Signup() {
                         <div className="p-4 p-md-5 card-body">
                             <form onSubmit={handleSubmit}>
                                 <div className="row">
+                                    <div className='mb-3 col-md-12'>
+                                        {!imgPreview ? (
+                                            <div className="form-floating">
+                                                <input
+                                                    type="file"
+                                                    className="form-control"
+                                                    id="userProfile"
+                                                    name="userProfile"
+                                                    onChange={handleChange}
+                                                    accept="image/png, image/jpeg, image/jpg"
+                                                />
+                                                <label htmlFor="userProfile">Blog Image</label>
+                                            </div>
+                                        ) : (
+                                            <div className="d-flex align-content-center justify-content-center mb-3">
+                                                <div className='position-relative' style={{
+                                                    maxWidth: '150px'
+                                                }}>
+                                                    <img
+                                                        src={imgPreview}
+                                                        alt="Selected preview"
+                                                        className="border rounded-circle img-fluid"
+                                                        style={{ maxHeight: '150px' }}
+                                                    />
+                                                    <span
+                                                        onClick={removeFile}
+                                                        style={{
+                                                            cursor: 'pointer',
+                                                            color: 'red',
+                                                            display: 'inline-block',
+                                                            marginTop: '0.5rem',
+                                                            position: 'absolute',
+                                                            top: '0px',
+                                                            right: '0px'
+                                                        }}
+                                                    >
+                                                        ×
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                     <div className="mb-3 col-md-6">
                                         <div className="form-floating">
                                             <input
@@ -156,19 +228,19 @@ function Signup() {
                                     <label htmlFor="password">Password</label>
                                 </div>
 
-                                <button 
-                                    type="submit" 
+                                <button
+                                    type="submit"
                                     className="mb-3 py-3 rounded-3 w-100 text-uppercase fw-bold btn btn-primary"
-                                    style={{ 
+                                    style={{
                                         background: 'linear-gradient(to right, #4e54c8, #8f94fb)',
                                         border: 'none'
                                     }}
                                     disabled={loading}
                                 >
                                     {loading ? (
-                                        <Spinner 
-                                            animation="border" 
-                                            size="sm" 
+                                        <Spinner
+                                            animation="border"
+                                            size="sm"
                                             className="me-2"
                                         />
                                     ) : 'Sign Up'}
@@ -177,8 +249,8 @@ function Signup() {
                                 <div className="text-center">
                                     <p className="mb-0 text-secondary">
                                         Already have an account?{' '}
-                                        <Link 
-                                            to="/login" 
+                                        <Link
+                                            to="/login"
                                             className="text-decoration-none fw-bold"
                                             style={{ color: '#4e54c8' }}
                                         >

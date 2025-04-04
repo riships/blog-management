@@ -5,7 +5,6 @@ import { ApiError } from "../middlewares/errorHandler.js";
 export const addUser = async (req, res, next) => {
     try {
         const { firstName, lastName, email, phone_number, password } = req.body;
-
         // Validate required fields
         if (!firstName || !lastName || !email || !password) {
             throw new ApiError(400, "All required fields must be provided");
@@ -28,12 +27,17 @@ export const addUser = async (req, res, next) => {
         }
 
         const user = await User.create({
+            userProfilePicture: `/${req.file.filename}`,
             firstName,
             lastName,
             email,
             phone_number,
             password
         });
+
+        if (!user) {
+            throw new ApiError(500, "Error creating user");
+        }
 
         return res.status(201).json({
             success: true,
@@ -88,6 +92,7 @@ export const login = async (req, res, next) => {
             token,
             user: {
                 id: user._id,
+                userProfilePicture: user.userProfilePicture,
                 email: user.email,
                 firstName: user.firstName,
                 lastName: user.lastName
@@ -104,3 +109,30 @@ export const login = async (req, res, next) => {
         return next(new ApiError(500, "Error during login"));
     }
 };
+
+
+export const getUserData = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password');
+        if (!user) {
+            return next(new ApiError(404, "User not found"));
+        }
+        return res.status(200).json({
+            success: true,
+            message: "User data retrieved successfully",
+            user: {
+                id: user._id,
+                userProfilePicture: user.userProfilePicture,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName
+            }
+        });
+    }
+    catch (error) {
+        if (error instanceof ApiError) {
+            return next(error);
+        }
+        return next(new ApiError(500, "Error retrieving user data"));
+    }
+}

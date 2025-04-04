@@ -6,6 +6,7 @@ const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [token, setToken] = useState(null);
+    const [user, setUser] = useState(null);
 
     const login = async (email, password) => {
         try {
@@ -25,13 +26,37 @@ const AuthProvider = ({ children }) => {
             setToken(data.token);
             sessionStorage.setItem('authToken', data.token);
             if (data.success) {
-
+                setUser(data.user);
+                return true;
             }
             return true;
         }
         catch (error) {
             setError(error.response.data.error);
             return false;
+        }
+    }
+
+    const getUserData = async () => {
+        try {
+            const response = await fetch(import.meta.env.VITE_API_URL + '/user', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'blog-auth-token': sessionStorage.getItem('authToken')
+                }
+            });
+            const data = await response.json();
+            if (response.status === 401) {
+                setToken(null);
+                sessionStorage.removeItem('authToken');
+                return;
+            }
+            setUser(data.user);
+            return data.user;
+        } catch (error) {
+            setError(error);
+            return null;
         }
     }
 
@@ -51,6 +76,7 @@ const AuthProvider = ({ children }) => {
         const token = sessionStorage.getItem('authToken');
         if (token) {
             setToken(token);
+            getUserData();
         }
         setLoading(false);
     }, []);
@@ -59,7 +85,7 @@ const AuthProvider = ({ children }) => {
 
 
     return (
-        <AuthContext.Provider value={{ login, logout, token, loading, error }}>
+        <AuthContext.Provider value={{ login, logout, token, loading, error, user }}>
             {children}
         </AuthContext.Provider>
     );

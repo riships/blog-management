@@ -65,8 +65,6 @@ export const getBlogById = async (req, res, next) => {
                 }
             });
 
-        console.log(blog);
-
         if (blog) {
             res.status(200).json({
                 success: true,

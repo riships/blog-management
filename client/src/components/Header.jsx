@@ -4,7 +4,10 @@ import { useAuth } from "../context/AuthContext";
 import { Button } from "react-bootstrap";
 
 function Header() {
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
+    console.log(user);
+
+
     const navigate = useNavigate();
     function handleLogout() {
         const confirm = window.confirm("Are you sure you want to log out?");
@@ -37,6 +40,14 @@ function Header() {
                         </NavLink>
                     </li>
                 </ul>
+                {/* user profile picture */}
+                <div className="user-profile">
+                    <img
+                        src={user?.userProfilePicture ? `${import.meta.env.VITE_MEDIA_URL}${user?.userProfilePicture}` : null}
+                        style={{ width: '40px', height: '40px', borderRadius: '50%' }}
+                        alt="User Profile"
+                    />
+                </div>
                 <Button variant="outline-danger" onClick={handleLogout}>Logout</Button>
             </nav>
 
