@@ -13,10 +13,10 @@ const blogSchema = new mongoose.Schema({
         type: String
     },
     comments: [{
-        user: mongoose.Schema.Types.ObjectId,
-        comment: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Comments'
     }],
-    addedBy: {
+    author: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },

@@ -30,17 +30,12 @@ const userSchema = new Schema({
         type: String,
         required: true
     },
-    bio: {
-        type: String,
-        trim: true,
-        maxLength: [500, "bio can't be more than 500 characters"]// validation
-    },
     userProfilePicture: {
         type: String
     },
-    videos: [{
+    comments: [{
         type: Schema.Types.ObjectId,
-        ref: 'Video'
+        ref: 'Comments'
     }]
 }, {
     timestamps: true
@@ -65,9 +60,6 @@ userSchema.methods.comparePassword = async function (password) {
     const isMatch = await bcrypt.compare(password, this.password);
     return isMatch;
 };
-
-
-
 
 
 const User = mongoose.model('User', userSchema, 'users');

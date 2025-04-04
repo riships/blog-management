@@ -1,32 +1,75 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Row, Col, Form, Button, Card, Spinner } from 'react-bootstrap';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import { Spinner } from 'react-bootstrap';
+import { useNavigate, useParams } from 'react-router-dom';
 
 function AddBlog() {
     const [blog, setBlog] = useState({
         title: '',
-        description: '',
+        description: '', 
         blogImg: ''
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [imgPreview, setImgPreview] = useState(null);
+    const [pageType, setPageType] = useState('add');
+
+    const { id } = useParams(); // Changed from blogId to id to match route param
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (id) {
+            setPageType('update');
+            fetchBlogData(id);
+        }
+    }, [id]);
+
+    const fetchBlogData = async (id) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/blogs/${id}`, {
+                method: 'GET',
+                headers: {
+                    'blog-auth-token': sessionStorage.getItem('authToken')
+                }
+            });
+            if (response.status === 401) {
+                alert('Session expired. Please login again.');
+                navigate('/login');
+                return;
+            }
+            const data = await response.json();
+            if (!data.success) {
+                alert(data.message);
+                return;
+            }
+            setBlog({
+                title: data.data.title,
+                description: data.data.description,
+                blogImg: data.data.blog_img_url
+            });
+            setImgPreview(`${import.meta.env.VITE_MEDIA_URL}${data.data.blog_img_url}`);
+        } catch (error) {
+            setError(error.message);
+            alert('Error fetching blog data');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value, type, files } = e.target;
 
-        if (type == 'file') {
-            let imgFile = files[0];
+        if (type === 'file') {
+            const imgFile = files[0];
 
-            if (imgFile.type != 'image/png' &&
-                imgFile.type != 'image/jpg' &&
-                imgFile.type != 'image/jpeg') {
-                alert("Kindly Choose supported file type.")
+            if (!['image/png', 'image/jpg', 'image/jpeg'].includes(imgFile.type)) {
+                alert("Please choose a supported file type (PNG, JPG, JPEG)");
                 return;
             }
 
-            let blogUrl = URL.createObjectURL(imgFile);
-            setImgPreview(blogUrl)
+            const blogUrl = URL.createObjectURL(imgFile);
+            setImgPreview(blogUrl);
 
             setBlog(prevState => ({
                 ...prevState,
@@ -38,7 +81,6 @@ function AddBlog() {
                 [name]: value
             }));
         }
-
     };
 
     const handleSubmit = async (e) => {
@@ -46,33 +88,45 @@ function AddBlog() {
         try {
             setLoading(true);
             setError(null);
+
             const formData = new FormData();
             formData.append('title', blog.title);
             formData.append('description', blog.description);
-            formData.append('blogImg', blog.blogImg);
+            if (blog.blogImg) {
+                formData.append('blogImg', blog.blogImg);
+            }
 
-            const response = await fetch(import.meta.env.VITE_API_URL + '/blogs', {
-                method: 'POST',
+            const url = pageType === 'update' ? 
+                `${import.meta.env.VITE_API_URL}/blogs/${id}` :
+                `${import.meta.env.VITE_API_URL}/blogs`;
+
+            const response = await fetch(url, {
+                method: pageType === 'update' ? 'PUT' : 'POST',
                 headers: {
                     'blog-auth-token': sessionStorage.getItem('authToken')
                 },
                 body: formData
             });
+
             const data = await response.json();
+            
             if (data.success) {
-                alert('Blog added successfully!');
-                setBlog({
-                    title: '',
-                    description: '',
-                    blogImg: '',
-                });
-                removeFile();
+                alert(`Blog ${pageType === 'update' ? 'updated' : 'added'} successfully!`);
+                if (pageType === 'add') {
+                    setBlog({
+                        title: '',
+                        description: '',
+                        blogImg: ''
+                    });
+                    removeFile();
+                }
+                navigate('/blogs');
+            } else {
+                alert(data.message || 'Operation failed');
             }
-            setLoading(false);
-            setError(null)
         } catch (error) {
             setError(error.message);
-            alert('Error adding blog');
+            alert(`Error ${pageType === 'update' ? 'updating' : 'adding'} blog`);
         } finally {
             setLoading(false);
         }
@@ -84,7 +138,7 @@ function AddBlog() {
             ...prevState,
             blogImg: ''
         }));
-    }
+    };
 
     return (
         <div className="bg-light py-5 min-vh-100 container-fluid">
@@ -92,7 +146,9 @@ function AddBlog() {
                 <div className="col-12 col-md-8 col-lg-6">
                     <div className="shadow card">
                         <div className="p-4 p-md-5 card-body">
-                            <h2 className="mb-4 text-center">Add New Blog</h2>
+                            <h2 className="mb-4 text-center">
+                                {pageType === 'update' ? 'Update Blog' : 'Add New Blog'}
+                            </h2>
                             <form onSubmit={handleSubmit}>
                                 <div className="mb-3">
                                     {!imgPreview ? (
@@ -104,7 +160,7 @@ function AddBlog() {
                                                 name="blogImg"
                                                 onChange={handleChange}
                                                 accept="image/png, image/jpeg, image/jpg"
-                                                required
+                                                required={pageType === 'add'}
                                             />
                                             <label htmlFor="blogImg">Blog Image</label>
                                         </div>
@@ -131,7 +187,7 @@ function AddBlog() {
                                                         right: '0px'
                                                     }}
                                                 >
-                                                    x
+                                                    ×
                                                 </span>
                                             </div>
                                         </div>
@@ -160,25 +216,28 @@ function AddBlog() {
                                         onChange={handleChange}
                                         placeholder="Enter Description"
                                         style={{ height: '120px' }}
+                                        required
                                     />
                                     <label htmlFor="description">Description</label>
                                 </div>
-                                {error ? (<p>{error}</p>) : ''}
+                                {error && <p className="text-danger">{error}</p>}
 
                                 <div className="d-flex justify-content-end">
                                     <button
                                         type="submit"
                                         className="px-4 py-2 btn btn-primary"
+                                        disabled={loading}
                                     >
-                                        {loading ? (<Spinner />) : ' Add Blog'}
+                                        {loading ? <Spinner animation="border" size="sm" /> : 
+                                            pageType === 'update' ? 'Update Blog' : 'Add Blog'}
                                     </button>
                                 </div>
                             </form>
                         </div>
                     </div>
                 </div>
-            </div >
-        </div >
+            </div>
+        </div>
     );
 }
 

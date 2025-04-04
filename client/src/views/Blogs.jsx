@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Spinner, Table } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { BsPencil, BsTrash } from 'react-icons/bs';
+import { BsPencil, BsTrash, BsEye } from 'react-icons/bs';
 
 function Blogs() {
     const [blogs, setBlogs] = useState([]);
@@ -9,13 +9,11 @@ function Blogs() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Fetch blogs data when component mounts
         fetchBlogs();
     }, []);
 
     const fetchBlogs = async () => {
         try {
-            // Replace with your actual API endpoint
             const response = await fetch(import.meta.env.VITE_API_URL + '/blogs',
                 {
                     method: 'GET',
@@ -39,6 +37,33 @@ function Blogs() {
         }
     };
 
+    const handleDelete = async (id) => {
+        try {
+            const response = await fetch(import.meta.env.VITE_API_URL + '/blogs/' + id,
+                {
+                    method: 'DELETE',
+                    headers: {
+                        'blog-auth-token': sessionStorage.getItem('authToken')
+                    }
+                });
+            if (response.status === 401) {
+                navigate('/login');
+                return;
+            }
+            const data = await response.json();
+            if (!data.success) {
+                return alert(data.message);
+            }
+            setBlogs(blogs.filter(blog => blog._id !== id));
+            alert('Blog deleted successfully');
+        }
+        catch (error) {
+            console.error('Error deleting blog:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="d-flex align-items-center justify-content-center min-vw-100 min-vh-100">
@@ -57,7 +82,7 @@ function Blogs() {
                             <th style={{ width: '120px' }}>Logo</th>
                             <th style={{ width: '180px' }}>Title</th>
                             <th>Description</th>
-                            <th style={{ width: '120px' }} className='text-center'>Ations</th>
+                            <th style={{ width: '160px' }} className='text-center'>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -69,19 +94,38 @@ function Blogs() {
                                     </td>
                                     <td>{blog.title}</td>
                                     <td>{blog.description}</td>
-                                    <td>
-                                        <div className='d-flex gap-3' style={{ transform: 'translate(30%, 50%)' }}>
-                                            <span className='bg-primary px-2 pb-1 rounded-2 text-white'><BsPencil /></span>
-                                            <span><BsTrash /></span>
+                                    <td style={{ verticalAlign: 'middle' }} className='text-center'>
+                                        <div className='d-flex justify-content-center gap-3'>
+                                            <span className='bg-success px-2 pb-1 rounded-2 text-white'
+                                                onClick={() => navigate('/blog/' + blog._id)}
+                                                style={{ cursor: 'pointer' }} title='View Blog'
+                                            ><BsEye /></span>
+                                            <span className='bg-primary px-2 pb-1 rounded-2 text-white'
+                                                onClick={() => navigate('/updateBlog/' + blog._id)}
+                                                style={{ cursor: 'pointer' }} title='Update Blog'
+                                            ><BsPencil /></span>
+                                            <span className='bg-danger px-2 pb-1 rounded-2 text-white'
+                                                onClick={() => {
+                                                    if (window.confirm('Are you sure you want to delete this blog?')) {
+                                                        handleDelete(blog._id);
+                                                    }
+                                                }}
+                                                style={{ cursor: 'pointer' }} title='Delete Blog'
+
+                                            ><BsTrash /></span>
                                         </div>
                                     </td>
                                 </tr>
                             ))
                         ) : (
-                            <div className="py-5 text-center col-12">
-                                <p className="text-muted h4">No blogs available in the collection.</p>
-                                <p className="text-muted">Please check back later!</p>
-                            </div>
+                            <tr>
+                                <td colSpan={4}>
+                                    <div className="py-5 text-center col-12">
+                                        <p className="text-muted h4">No blogs available in the collection.</p>
+                                        <p className="text-muted">Please check back later!</p>
+                                    </div>
+                                </td>
+                            </tr>
                         )}
                     </tbody>
                 </Table>

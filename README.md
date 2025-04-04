@@ -10,8 +10,8 @@ A full-stack application for managing Blogs with MERN stack (MongoDB, Express.js
 
 ## 1. Clone the Repository
 ```sh
-git clone https://github.com/riships/blogs-management.git
-cd blogs-management
+git clone https://github.com/riships/blog-management.git
+cd blog-management
 ```
 
 ## 2. Set Up Environment Variables
@@ -41,6 +41,7 @@ Add the following environment variables:
 ```sh
 # client/.env
 VITE_API_URL=http://localhost:5000/api
+VITE_MEDIA_URL=http://localhost:5000
 ```
 
 ## 3. Install Dependencies
