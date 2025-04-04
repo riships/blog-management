@@ -32,7 +32,6 @@ function Blogs() {
             setBlogs(data.data);
             setLoading(false);
         } catch (error) {
-            console.error('Error fetching blogs:', error);
             setLoading(false);
         }
     };
@@ -58,7 +57,7 @@ function Blogs() {
             alert('Blog deleted successfully');
         }
         catch (error) {
-            console.error('Error deleting blog:', error);
+            alert(error.message)
         } finally {
             setLoading(false);
         }

@@ -44,8 +44,6 @@ const verifyJwt = (req, res, next) => {
             throw error;
         }
 
-        // Handle any other unexpected errors
-        console.error('JWT Verification Error:', error);
         throw new ApiError(500, 'Internal server error during authentication');
     }
 };

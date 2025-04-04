@@ -29,10 +29,10 @@ function BlogView() {
                 alert(data.message);
                 return;
             }
-            
+
             setBlog(data.data);
         } catch (error) {
-            console.error('Error fetching blog:', error);
+            alert(error.message || "Error fetching blog")
         } finally {
             setLoading(false);
         }
@@ -63,7 +63,6 @@ function BlogView() {
                 alert(data.message);
             }
         } catch (error) {
-            console.error('Error posting comment:', error);
             alert('Failed to post comment');
         }
     };
